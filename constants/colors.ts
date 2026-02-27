@@ -1,0 +1,23 @@
+export default {
+  dark: {
+    background: '#0B0B0F',
+    card: '#16161D',
+    cardElevated: '#1E1E26',
+    accent: '#F97316',
+    accentDark: '#EA580C',
+    accentLight: '#FDBA74',
+    success: '#22C55E',
+    danger: '#EF4444',
+    warning: '#EAB308',
+    gold: '#FFD700',
+    silver: '#C0C0C0',
+    bronze: '#CD7F32',
+    text: '#FFFFFF',
+    textSecondary: '#9CA3AF',
+    textTertiary: '#6B7280',
+    border: '#2A2A35',
+    tabBar: '#111116',
+    inputBg: '#1A1A22',
+    overlay: 'rgba(0,0,0,0.6)',
+  },
+};

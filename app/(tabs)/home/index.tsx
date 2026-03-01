@@ -5,15 +5,12 @@ import {
   Zap,
   BookOpen,
   TrendingUp,
-  Trophy,
   Repeat,
   Sparkles,
-  ChevronRight,
   BarChart3,
   Award,
   Target,
   Check,
-  Shield,
   User,
 } from 'lucide-react-native';
 import React, { useCallback, useMemo } from 'react';
@@ -26,16 +23,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
-import { MOCK_LEADERBOARD } from '@/mocks/leaderboard';
 import { useApp } from '@/contexts/AppContext';
-import { trpc } from '@/lib/trpc';
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const {
     selectedGym,
-    selectedGymId,
     workoutHistory,
     weeklyVolume,
     weeklyWorkouts,
@@ -44,20 +38,7 @@ export default function HomeScreen() {
     competitions,
     achievements,
     currentStreak,
-    isAdmin,
-    userRole,
-    switchRole,
   } = useApp();
-
-  const leaderboardQuery = trpc.leaderboards.getLeaderboard.useQuery(
-    { gymId: selectedGymId ?? 'kabs' },
-    { enabled: !!selectedGymId, staleTime: 60000 },
-  );
-
-  const competitionsQuery = trpc.competitions.getActive.useQuery(
-    { gymId: selectedGymId ?? 'kabs' },
-    { enabled: !!selectedGymId, staleTime: 30000 },
-  );
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -67,22 +48,8 @@ export default function HomeScreen() {
   }, []);
 
   const recentWorkouts = useMemo(() => {
-    return workoutHistory.slice(0, 3);
+    return workoutHistory.slice(0, 2);
   }, [workoutHistory]);
-
-  const topThree = useMemo(() => {
-    if (leaderboardQuery.data && leaderboardQuery.data.length > 0) {
-      return leaderboardQuery.data.slice(0, 3).map((e) => ({
-        id: e.id,
-        name: e.name,
-        totalVolume: e.totalVolume,
-        streak: e.streak,
-        visits: e.visits,
-        sport: e.sport,
-      }));
-    }
-    return MOCK_LEADERBOARD.slice(0, 3);
-  }, [leaderboardQuery.data]);
 
   const unlockedCount = useMemo(() => {
     return achievements.filter((a) => a.unlockedAt).length;
@@ -222,44 +189,6 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            if (isAdmin) {
-              router.push('/admin-dashboard' as any);
-            } else {
-              switchRole('admin');
-            }
-          }}
-          style={({ pressed }) => [styles.adminBanner, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
-          testID="admin-panel-btn"
-        >
-          <View style={styles.adminBannerIcon}>
-            <Shield color={isAdmin ? '#fff' : Colors.dark.textSecondary} size={20} />
-          </View>
-          <View style={styles.adminBannerText}>
-            <Text style={styles.adminBannerTitle}>
-              {isAdmin ? 'Open Admin Panel' : 'Switch to Coach/Admin'}
-            </Text>
-            <Text style={styles.adminBannerSubtitle}>
-              {isAdmin ? 'Manage members, competitions & analytics' : 'Access gym management tools'}
-            </Text>
-          </View>
-          <ChevronRight color={Colors.dark.textTertiary} size={18} />
-        </Pressable>
-
-        {isAdmin && (
-          <Pressable
-            onPress={() => {
-              Haptics.selectionAsync();
-              switchRole('member');
-            }}
-            style={({ pressed }) => [styles.switchBackBtn, pressed && { opacity: 0.7 }]}
-          >
-            <Text style={styles.switchBackText}>Switch back to Member view</Text>
-          </Pressable>
-        )}
-
         <View style={styles.insightCard}>
           <View style={styles.insightHeader}>
             <Sparkles color={Colors.dark.accent} size={18} />
@@ -309,40 +238,6 @@ export default function HomeScreen() {
             })}
           </View>
         )}
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Trophy color={Colors.dark.gold} size={18} />
-              <Text style={styles.sectionTitle}>Today's Competition</Text>
-            </View>
-          </View>
-          <View style={styles.miniLeaderboard}>
-            {topThree.map((entry, idx) => (
-              <View key={entry.id} style={styles.miniLeaderRow}>
-                <View style={styles.miniLeaderLeft}>
-                  <Text style={[
-                    styles.miniLeaderRank,
-                    idx === 0 && { color: Colors.dark.gold },
-                    idx === 1 && { color: Colors.dark.silver },
-                    idx === 2 && { color: Colors.dark.bronze },
-                  ]}>
-                    #{idx + 1}
-                  </Text>
-                  <Text style={styles.miniLeaderName}>{entry.name}</Text>
-                </View>
-                <Text style={styles.miniLeaderVolume}>{formatVolume(entry.totalVolume)} kg</Text>
-              </View>
-            ))}
-          </View>
-          <Pressable
-            onPress={() => router.navigate('/(tabs)/leaderboards' as any)}
-            style={styles.viewAllBtn}
-          >
-            <Text style={styles.viewAllText}>View Full Leaderboard</Text>
-            <ChevronRight color={Colors.dark.accent} size={16} />
-          </Pressable>
-        </View>
 
         {recentWorkouts.length > 0 && (
           <View style={styles.section}>

@@ -94,20 +94,8 @@ export default function ExerciseLibraryScreen() {
         />
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        <Pressable
-          onPress={() => setSelectedGroup('All')}
-          style={[styles.chip, selectedGroup === 'All' && styles.chipActive]}
-        >
-          <Text style={[styles.chipText, selectedGroup === 'All' && styles.chipTextActive]}>
-            All
-          </Text>
-        </Pressable>
-        {MUSCLE_GROUPS.map((group) => (
+      <View style={styles.filterGrid}>
+        {(['All', ...MUSCLE_GROUPS] as string[]).map((group) => (
           <Pressable
             key={group}
             onPress={() => setSelectedGroup(group)}
@@ -118,7 +106,7 @@ export default function ExerciseLibraryScreen() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
       <ScrollView
         style={styles.scroll}
@@ -190,27 +178,32 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
     paddingVertical: 14,
   },
-  filterRow: {
+  filterGrid: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
     paddingHorizontal: 20,
     paddingVertical: 14,
     gap: 8,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
+    width: 76,
+    height: 76,
+    borderRadius: 14,
     backgroundColor: Colors.dark.card,
     borderWidth: 1,
     borderColor: Colors.dark.border,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   chipActive: {
     backgroundColor: Colors.dark.accent,
     borderColor: Colors.dark.accent,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600' as const,
     color: Colors.dark.textSecondary,
+    textAlign: 'center' as const,
   },
   chipTextActive: {
     color: '#fff',

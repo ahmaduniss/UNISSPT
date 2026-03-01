@@ -8,6 +8,8 @@ import {
   X,
   Dumbbell,
   Repeat2,
+  Zap,
+  BookOpen,
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -39,6 +41,7 @@ export default function WorkoutScreen() {
     replaceExerciseInWorkout,
     finishWorkout,
     discardWorkout,
+    startFreestyleWorkout,
   } = useApp();
 
   const [alternativeModal, setAlternativeModal] = useState<{
@@ -160,10 +163,24 @@ export default function WorkoutScreen() {
           <View style={styles.emptyIcon}>
             <Dumbbell color={Colors.dark.textTertiary} size={48} />
           </View>
-          <Text style={styles.emptyTitle}>No Active Workout</Text>
-          <Text style={styles.emptySubtitle}>
-            Start a freestyle session or pick a routine from the Home tab
-          </Text>
+          <Text style={styles.emptyTitle}>Ready to Train?</Text>
+          <Text style={styles.emptySubtitle}>Start a session to begin tracking</Text>
+          <Pressable
+            onPress={() => {
+              startFreestyleWorkout('Freestyle Session');
+            }}
+            style={styles.startBtn}
+          >
+            <Zap color="#fff" size={18} />
+            <Text style={styles.startBtnText}>Start Freestyle</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/routines' as any)}
+            style={styles.routinesBtn}
+          >
+            <BookOpen color={Colors.dark.accent} size={18} />
+            <Text style={styles.routinesBtnText}>Browse Routines</Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -386,6 +403,7 @@ const styles = StyleSheet.create({
   emptyContent: {
     alignItems: 'center' as const,
     paddingHorizontal: 40,
+    width: '100%' as const,
   },
   emptyIcon: {
     width: 96,
@@ -407,6 +425,42 @@ const styles = StyleSheet.create({
     color: Colors.dark.textTertiary,
     textAlign: 'center' as const,
     lineHeight: 22,
+    marginBottom: 32,
+  },
+  startBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: Colors.dark.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    gap: 8,
+    width: '100%' as const,
+    marginBottom: 12,
+  },
+  startBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  routinesBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: Colors.dark.card,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    gap: 8,
+    width: '100%' as const,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  routinesBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.dark.accent,
   },
   topBar: {
     flexDirection: 'row' as const,

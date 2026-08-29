@@ -18,6 +18,8 @@ export const DEFAULT_EXERCISES: Exercise[] = [
   { id: 'e4', name: 'Cable Crossover', muscleGroup: 'Chest' },
   { id: 'e5', name: 'Push-ups', muscleGroup: 'Chest' },
   { id: 'e6', name: 'Decline Bench Press', muscleGroup: 'Chest' },
+  { id: 'e7', name: 'Incline Chest Press (Circular)', muscleGroup: 'Chest' },
+  { id: 'e8', name: 'Super Incline Bench Press', muscleGroup: 'Chest' },
 
   { id: 'e10', name: 'Conventional Deadlift', muscleGroup: 'Back' },
   { id: 'e11', name: 'Barbell Row', muscleGroup: 'Back' },
@@ -26,6 +28,8 @@ export const DEFAULT_EXERCISES: Exercise[] = [
   { id: 'e14', name: 'Seated Cable Row', muscleGroup: 'Back' },
   { id: 'e15', name: 'T-Bar Row', muscleGroup: 'Back' },
   { id: 'e16', name: 'Face Pull', muscleGroup: 'Back' },
+  { id: 'e17', name: 'Lat Pulldown (Circular)', muscleGroup: 'Back' },
+  { id: 'e18', name: 'Rowing Machine (Circular)', muscleGroup: 'Back' },
 
   { id: 'e20', name: 'Overhead Press', muscleGroup: 'Shoulders' },
   { id: 'e21', name: 'Lateral Raise', muscleGroup: 'Shoulders' },
@@ -42,6 +46,8 @@ export const DEFAULT_EXERCISES: Exercise[] = [
   { id: 'e35', name: 'Calf Raise', muscleGroup: 'Legs' },
   { id: 'e36', name: 'Bulgarian Split Squat', muscleGroup: 'Legs' },
   { id: 'e37', name: 'Hip Thrust', muscleGroup: 'Legs' },
+  { id: 'e38', name: 'Pendulum Squat', muscleGroup: 'Legs' },
+  { id: 'e39', name: 'Leg Extensions (Machine)', muscleGroup: 'Legs' },
   { id: 'e38', name: 'Hack Squat', muscleGroup: 'Legs' },
 
   { id: 'e40', name: 'Barbell Curl', muscleGroup: 'Arms' },

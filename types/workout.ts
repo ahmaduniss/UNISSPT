@@ -9,6 +9,7 @@ export interface WorkoutSet {
   weight: number;
   reps: number;
   completed: boolean;
+  notes?: string;
 }
 
 export interface WorkoutExercise {
@@ -20,6 +21,7 @@ export interface WorkoutExercise {
 
 export interface Workout {
   id: string;
+  clientId: string;
   name: string;
   date: string;
   duration: number;
@@ -31,8 +33,6 @@ export interface Routine {
   id: string;
   name: string;
   exercises: RoutineExercise[];
-  isCoach?: boolean;
-  coachName?: string;
   usageCount?: number;
 }
 
@@ -44,110 +44,85 @@ export interface RoutineExercise {
 
 export interface ActiveWorkout {
   id: string;
+  clientId: string;
+  clientName: string;
   name: string;
   startTime: number;
   exercises: WorkoutExercise[];
 }
 
-export interface LeaderboardEntry {
+export type ClientStatus = 'active' | 'inactive';
+
+export type SportKey = 'basketball' | 'track_field' | 'football' | 'general';
+
+export type UserRole = 'trainer' | 'client';
+
+export type BookingStatus = 'pending' | 'accepted' | 'declined';
+
+export interface BookingRequest {
+  id: string;
+  clientUserId: string;
+  trainerId: string;
+  clientName: string;
+  message?: string | null;
+  status: BookingStatus;
+  createdAt: string;
+  respondedAt?: string | null;
+}
+
+export interface TrainerProfile {
+  trainerId: string;
+  name: string;
+  bio?: string | null;
+  specialties: SportKey[];
+  hourlyRate?: number | null;
+  yearsExperience?: number | null;
+  avatarUrl?: string | null;
+  isPublic: boolean;
+}
+
+export interface Client {
+  id: string;
+  trainerId: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  goal?: string | null;
+  notes?: string | null;
+  startingWeightKg?: number | null;
+  status: ClientStatus;
+  avatarUrl?: string | null;
+  sport: SportKey;
+  createdAt: string;
+}
+
+export interface PerformanceMetric {
   id: string;
   name: string;
-  totalVolume: number;
-  streak: number;
-  visits: number;
-  sport: string;
+  unit: string;
+  lowerIsBetter?: boolean;
+  isCustom?: boolean;
 }
 
-export interface SocialPost {
+export interface PerformanceTest {
   id: string;
-  userName: string;
-  type: 'workout' | 'pr' | 'streak';
-  content: string;
-  timestamp: string;
-  likes: number;
-  volume?: number;
+  clientId: string;
+  metricId: string;
+  metricName: string;
+  unit: string;
+  value: number;
+  recordedAt: string;
+  notes?: string | null;
+  createdAt: string;
 }
 
-export interface Gym {
+export interface ProgressPhoto {
   id: string;
-  name: string;
-  location: string;
-  active: boolean;
-}
-
-export interface Competition {
-  id: string;
-  type: 'daily_volume' | 'daily_sets' | 'cardio';
-  title: string;
-  description: string;
-  date: string;
-  target?: number;
-  userProgress: number;
-  isCompleted: boolean;
-}
-
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  unlockedAt: string | null;
-  requirement: number;
-  category: 'volume' | 'sessions' | 'streak' | 'social' | 'competition';
-}
-
-export interface SharedPost {
-  id: string;
-  userName: string;
-  type: 'workout' | 'pr' | 'streak' | 'achievement';
-  content: string;
-  timestamp: string;
-  likes: number;
-  likedByUser: boolean;
-  volume?: number;
-  workoutId?: string;
-}
-
-export type UserRole = 'member' | 'coach' | 'admin';
-
-export interface GymMember {
-  id: string;
-  name: string;
-  joinDate: string;
-  totalWorkouts: number;
-  lastVisit: string;
-  sport: string;
-  status: 'active' | 'inactive';
-}
-
-export interface AdminCompetition {
-  id: string;
-  type: 'daily_volume' | 'daily_sets' | 'cardio';
-  title: string;
-  description: string;
-  date: string;
-  target: number;
-  gymId: string;
-  prize?: string;
-  createdBy: string;
-  participants: {
-    userId: string;
-    userName: string;
-    progress: number;
-    isCompleted: boolean;
-    verifiedByAdmin: boolean;
-  }[];
-}
-
-export interface GymAnalytics {
-  gymId: string;
-  totalMembers: number;
-  activeToday: number;
-  totalWorkoutsThisWeek: number;
-  totalVolumeThisWeek: number;
-  averageSessionDuration: number;
-  peakHours: { hour: number; count: number }[];
-  topExercises: { name: string; count: number }[];
-  memberRetention: number;
-  sportBreakdown: { sport: string; count: number }[];
+  clientId: string;
+  storagePath: string;
+  url: string;
+  takenAt: string;
+  weightKg?: number | null;
+  notes?: string | null;
+  createdAt: string;
 }

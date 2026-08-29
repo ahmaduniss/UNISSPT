@@ -31,14 +31,109 @@ function RootLayoutNav() {
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="gym-select" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(client)" options={{ headerShown: false }} />
       <Stack.Screen
-        name="routines"
+        name="coach/[id]/index"
         options={{
-          title: "Routines",
+          title: "Coach",
+          headerStyle: { backgroundColor: Colors.dark.background },
+        }}
+      />
+      <Stack.Screen
+        name="coach/[id]/history"
+        options={{
+          title: "History",
+          headerStyle: { backgroundColor: Colors.dark.background },
+        }}
+      />
+      <Stack.Screen
+        name="coach/[id]/photos"
+        options={{
+          title: "Progress Photos",
+          headerStyle: { backgroundColor: Colors.dark.background },
+        }}
+      />
+      <Stack.Screen
+        name="coach/[id]/performance"
+        options={{
+          title: "Performance Testing",
+          headerStyle: { backgroundColor: Colors.dark.background },
+        }}
+      />
+      <Stack.Screen
+        name="trainer/[trainerId]"
+        options={{
+          title: "Trainer",
+          headerStyle: { backgroundColor: Colors.dark.background },
+        }}
+      />
+      <Stack.Screen
+        name="trainer-public-profile"
+        options={{
+          title: "Public Profile",
           presentation: "modal",
           headerStyle: { backgroundColor: Colors.dark.card },
+        }}
+      />
+      <Stack.Screen
+        name="add-client"
+        options={{
+          title: "Add Client",
+          presentation: "modal",
+          headerStyle: { backgroundColor: Colors.dark.card },
+        }}
+      />
+      <Stack.Screen
+        name="client/[id]/index"
+        options={{
+          title: "Client",
+          headerStyle: { backgroundColor: Colors.dark.background },
+        }}
+      />
+      <Stack.Screen
+        name="client/[id]/edit"
+        options={{
+          title: "Edit Client",
+          presentation: "modal",
+          headerStyle: { backgroundColor: Colors.dark.card },
+        }}
+      />
+      <Stack.Screen
+        name="client/[id]/history"
+        options={{
+          title: "History",
+          headerStyle: { backgroundColor: Colors.dark.background },
+        }}
+      />
+      <Stack.Screen
+        name="client/[id]/photos"
+        options={{
+          title: "Progress Photos",
+          headerStyle: { backgroundColor: Colors.dark.background },
+        }}
+      />
+      <Stack.Screen
+        name="client/[id]/add-photo"
+        options={{
+          title: "Add Photo",
+          presentation: "modal",
+          headerStyle: { backgroundColor: Colors.dark.card },
+        }}
+      />
+      <Stack.Screen
+        name="client/[id]/analytics"
+        options={{
+          title: "Analytics",
+          headerStyle: { backgroundColor: Colors.dark.background },
+        }}
+      />
+      <Stack.Screen
+        name="client/[id]/performance"
+        options={{
+          title: "Performance Testing",
+          headerStyle: { backgroundColor: Colors.dark.background },
         }}
       />
       <Stack.Screen
@@ -55,65 +150,6 @@ function RootLayoutNav() {
           title: "Exercise Library",
           presentation: "modal",
           headerStyle: { backgroundColor: Colors.dark.card },
-        }}
-      />
-      <Stack.Screen
-        name="analytics"
-        options={{
-          title: "Analytics",
-          presentation: "modal",
-          headerStyle: { backgroundColor: Colors.dark.card },
-        }}
-      />
-      <Stack.Screen
-        name="achievements"
-        options={{
-          title: "Achievements",
-          presentation: "modal",
-          headerStyle: { backgroundColor: Colors.dark.card },
-        }}
-      />
-      <Stack.Screen
-        name="admin-dashboard"
-        options={{
-          title: "Admin Panel",
-          headerStyle: { backgroundColor: Colors.dark.background },
-        }}
-      />
-      <Stack.Screen
-        name="admin-members"
-        options={{
-          title: "Members",
-          headerStyle: { backgroundColor: Colors.dark.background },
-        }}
-      />
-      <Stack.Screen
-        name="admin-competitions"
-        options={{
-          title: "Competitions",
-          headerStyle: { backgroundColor: Colors.dark.background },
-        }}
-      />
-      <Stack.Screen
-        name="admin-analytics"
-        options={{
-          title: "Gym Analytics",
-          headerStyle: { backgroundColor: Colors.dark.background },
-        }}
-      />
-      <Stack.Screen
-        name="admin-announce"
-        options={{
-          title: "Announcement",
-          headerStyle: { backgroundColor: Colors.dark.background },
-        }}
-      />
-      <Stack.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          presentation: "modal",
-          headerShown: false,
         }}
       />
     </Stack>

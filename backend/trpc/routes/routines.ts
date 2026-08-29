@@ -1,6 +1,7 @@
 import * as z from "zod";
 
-import { createTRPCRouter, publicProcedure } from "../create-context";
+import { createTRPCRouter, protectedProcedure } from "../create-context";
+import { db } from "../../lib/db";
 
 const routineExerciseSchema = z.object({
   exerciseId: z.string(),
@@ -8,113 +9,75 @@ const routineExerciseSchema = z.object({
   targetSets: z.number(),
 });
 
-interface SharedRoutine {
-  id: string;
-  name: string;
-  exercises: { exerciseId: string; exerciseName: string; targetSets: number }[];
-  creatorId: string;
-  creatorName: string;
-  gymId: string;
-  usageCount: number;
-  isCoach: boolean;
-  createdAt: string;
+function mapRoutine(row: Record<string, any>) {
+  return {
+    id: row.id,
+    name: row.name,
+    exercises: row.exercises as z.infer<typeof routineExerciseSchema>[],
+    usageCount: row.usage_count,
+    createdAt: row.created_at,
+  };
 }
 
-const sharedRoutines: SharedRoutine[] = [
-  {
-    id: "sr1",
-    name: "Haikal's Power Builder",
-    exercises: [
-      { exerciseId: "1", exerciseName: "Barbell Bench Press", targetSets: 4 },
-      { exerciseId: "2", exerciseName: "Barbell Squat", targetSets: 4 },
-      { exerciseId: "3", exerciseName: "Deadlift", targetSets: 3 },
-      { exerciseId: "5", exerciseName: "Overhead Press", targetSets: 3 },
-    ],
-    creatorId: "coach1",
-    creatorName: "Coach Haikal",
-    gymId: "kabs",
-    usageCount: 87,
-    isCoach: true,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "sr2",
-    name: "Abu Ali's Hypertrophy Split",
-    exercises: [
-      { exerciseId: "1", exerciseName: "Barbell Bench Press", targetSets: 4 },
-      { exerciseId: "6", exerciseName: "Dumbbell Row", targetSets: 4 },
-      { exerciseId: "7", exerciseName: "Lateral Raises", targetSets: 3 },
-      { exerciseId: "4", exerciseName: "Pull Ups", targetSets: 3 },
-    ],
-    creatorId: "coach2",
-    creatorName: "Coach Abu Ali",
-    gymId: "kabs",
-    usageCount: 65,
-    isCoach: true,
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
 export const routinesRouter = createTRPCRouter({
-  getShared: publicProcedure
-    .input(
-      z.object({
-        gymId: z.string(),
-      }),
-    )
-    .query(({ input }) => {
-      console.log("[routines] getShared gym:", input.gymId);
-      return sharedRoutines
-        .filter((r) => r.gymId === input.gymId)
-        .sort((a, b) => b.usageCount - a.usageCount);
-    }),
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const { data, error } = await db
+      .from("trainer_routines")
+      .select("*")
+      .eq("trainer_id", ctx.userId)
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    return (data ?? []).map(mapRoutine);
+  }),
 
-  shareRoutine: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         name: z.string(),
         exercises: z.array(routineExerciseSchema),
-        creatorId: z.string(),
-        creatorName: z.string(),
-        gymId: z.string(),
-        isCoach: z.boolean().default(false),
       }),
     )
-    .mutation(({ input }) => {
-      console.log("[routines] shareRoutine:", input.name, "by:", input.creatorName);
-      const routine: SharedRoutine = {
-        id: `sr_${Date.now()}`,
-        name: input.name,
-        exercises: input.exercises,
-        creatorId: input.creatorId,
-        creatorName: input.creatorName,
-        gymId: input.gymId,
-        usageCount: 0,
-        isCoach: input.isCoach,
-        createdAt: new Date().toISOString(),
-      };
-      sharedRoutines.push(routine);
-      return routine;
+    .mutation(async ({ input, ctx }) => {
+      const { data, error } = await db
+        .from("trainer_routines")
+        .insert({
+          trainer_id: ctx.userId,
+          name: input.name,
+          exercises: input.exercises,
+          usage_count: 0,
+        })
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return mapRoutine(data);
     }),
 
-  incrementUsage: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ routineId: z.string() }))
-    .mutation(({ input }) => {
-      console.log("[routines] incrementUsage:", input.routineId);
-      const routine = sharedRoutines.find((r) => r.id === input.routineId);
-      if (routine) {
-        routine.usageCount += 1;
-      }
+    .mutation(async ({ input, ctx }) => {
+      const { error } = await db
+        .from("trainer_routines")
+        .delete()
+        .eq("id", input.routineId)
+        .eq("trainer_id", ctx.userId);
+      if (error) return { success: false, error: error.message };
       return { success: true };
     }),
 
-  getTrending: publicProcedure
-    .input(z.object({ gymId: z.string(), limit: z.number().default(10) }))
-    .query(({ input }) => {
-      console.log("[routines] getTrending gym:", input.gymId);
-      return sharedRoutines
-        .filter((r) => r.gymId === input.gymId)
-        .sort((a, b) => b.usageCount - a.usageCount)
-        .slice(0, input.limit);
+  incrementUsage: protectedProcedure
+    .input(z.object({ routineId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { data: existing } = await db
+        .from("trainer_routines")
+        .select("usage_count")
+        .eq("id", input.routineId)
+        .eq("trainer_id", ctx.userId)
+        .single();
+      if (!existing) return { success: false };
+      await db
+        .from("trainer_routines")
+        .update({ usage_count: (existing.usage_count ?? 0) + 1 })
+        .eq("id", input.routineId);
+      return { success: true };
     }),
 });

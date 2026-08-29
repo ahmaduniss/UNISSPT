@@ -1,11 +1,13 @@
 import * as z from "zod";
 
-import { createTRPCRouter, publicProcedure } from "../create-context";
+import { createTRPCRouter, protectedProcedure } from "../create-context";
+import { db } from "../../lib/db";
 
 const workoutSetSchema = z.object({
   weight: z.number(),
   reps: z.number(),
   completed: z.boolean(),
+  notes: z.string().optional(),
 });
 
 const workoutExerciseSchema = z.object({
@@ -24,54 +26,78 @@ const workoutSchema = z.object({
   totalVolume: z.number(),
 });
 
-const workouts: Record<string, z.infer<typeof workoutSchema>[]> = {};
+async function assertOwnsClient(clientId: string, trainerId: string) {
+  const { data, error } = await db
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("trainer_id", trainerId)
+    .single();
+  if (error || !data) throw new Error("Client not found");
+}
+
+async function assertCanViewClient(clientId: string, userId: string) {
+  const { data, error } = await db
+    .from("clients")
+    .select("id, trainer_id, user_id")
+    .eq("id", clientId)
+    .single();
+  if (error || !data) throw new Error("Client not found");
+  if (data.trainer_id !== userId && data.user_id !== userId) {
+    throw new Error("Client not found");
+  }
+}
 
 export const workoutsRouter = createTRPCRouter({
-  getHistory: publicProcedure
-    .input(z.object({ userId: z.string() }))
-    .query(({ input }) => {
-      console.log("[workouts] getHistory for user:", input.userId);
-      return workouts[input.userId] ?? [];
+  getHistory: protectedProcedure
+    .input(z.object({ clientId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      await assertCanViewClient(input.clientId, ctx.userId);
+      const { data, error } = await db
+        .from("workouts")
+        .select("*")
+        .eq("client_id", input.clientId)
+        .order("date", { ascending: false });
+      if (error) return [];
+      return (data ?? []).map((row) => ({
+        id: row.id,
+        clientId: row.client_id,
+        name: row.name,
+        date: row.date,
+        duration: row.duration,
+        totalVolume: row.total_volume,
+        exercises: row.exercises as z.infer<typeof workoutExerciseSchema>[],
+      }));
     }),
 
-  saveWorkout: publicProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        workout: workoutSchema,
-      }),
-    )
-    .mutation(({ input }) => {
-      console.log("[workouts] saveWorkout for user:", input.userId, "workout:", input.workout.name);
-      if (!workouts[input.userId]) {
-        workouts[input.userId] = [];
-      }
-      workouts[input.userId].unshift(input.workout);
-      return { success: true, workout: input.workout };
+  saveWorkout: protectedProcedure
+    .input(z.object({ clientId: z.string(), workout: workoutSchema }))
+    .mutation(async ({ input, ctx }) => {
+      await assertOwnsClient(input.clientId, ctx.userId);
+      const { error } = await db.from("workouts").upsert({
+        id: input.workout.id,
+        client_id: input.clientId,
+        trainer_id: ctx.userId,
+        name: input.workout.name,
+        date: input.workout.date,
+        duration: input.workout.duration,
+        total_volume: input.workout.totalVolume,
+        exercises: input.workout.exercises,
+      });
+      if (error) throw new Error(error.message);
+      return { success: true, workout: { ...input.workout, clientId: input.clientId } };
     }),
 
-  deleteWorkout: publicProcedure
-    .input(z.object({ userId: z.string(), workoutId: z.string() }))
-    .mutation(({ input }) => {
-      console.log("[workouts] deleteWorkout:", input.workoutId);
-      if (workouts[input.userId]) {
-        workouts[input.userId] = workouts[input.userId].filter(
-          (w) => w.id !== input.workoutId,
-        );
-      }
+  deleteWorkout: protectedProcedure
+    .input(z.object({ clientId: z.string(), workoutId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      await assertOwnsClient(input.clientId, ctx.userId);
+      const { error } = await db
+        .from("workouts")
+        .delete()
+        .eq("id", input.workoutId)
+        .eq("client_id", input.clientId);
+      if (error) return { success: false, error: error.message };
       return { success: true };
-    }),
-
-  syncHistory: publicProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        workouts: z.array(workoutSchema),
-      }),
-    )
-    .mutation(({ input }) => {
-      console.log("[workouts] syncHistory for user:", input.userId, "count:", input.workouts.length);
-      workouts[input.userId] = input.workouts;
-      return { success: true, count: input.workouts.length };
     }),
 });

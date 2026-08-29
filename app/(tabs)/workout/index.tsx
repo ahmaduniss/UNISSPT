@@ -8,8 +8,7 @@ import {
   X,
   Dumbbell,
   Repeat2,
-  Zap,
-  BookOpen,
+  Users,
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -23,6 +22,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
@@ -35,13 +35,13 @@ export default function WorkoutScreen() {
     activeWorkout,
     allExercises,
     updateSet,
-    toggleSetComplete,
+    updateSetNotes,
     addSetToExercise,
+    removeSetFromExercise,
     removeExerciseFromWorkout,
     replaceExerciseInWorkout,
     finishWorkout,
     discardWorkout,
-    startFreestyleWorkout,
   } = useApp();
 
   const [alternativeModal, setAlternativeModal] = useState<{
@@ -90,17 +90,20 @@ export default function WorkoutScreen() {
   }, [activeWorkout]);
 
   const handleFinish = useCallback(() => {
-    Alert.alert('Finish Workout', 'Save this workout to your history?', [
+    if (!activeWorkout) return;
+    Alert.alert('Finish Workout', `Save this session to ${activeWorkout.clientName}'s history?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Finish',
         onPress: () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          finishWorkout();
+          const clientId = activeWorkout.clientId;
+          const saved = finishWorkout();
+          if (saved) router.navigate(`/client/${clientId}` as any);
         },
       },
     ]);
-  }, [finishWorkout]);
+  }, [finishWorkout, router, activeWorkout]);
 
   const handleDiscard = useCallback(() => {
     Alert.alert('Discard Workout', 'Are you sure? This cannot be undone.', [
@@ -163,23 +166,14 @@ export default function WorkoutScreen() {
           <View style={styles.emptyIcon}>
             <Dumbbell color={Colors.dark.textTertiary} size={48} />
           </View>
-          <Text style={styles.emptyTitle}>Ready to Train?</Text>
-          <Text style={styles.emptySubtitle}>Start a session to begin tracking</Text>
+          <Text style={styles.emptyTitle}>No Active Session</Text>
+          <Text style={styles.emptySubtitle}>Open a client and start a session to begin tracking</Text>
           <Pressable
-            onPress={() => {
-              startFreestyleWorkout('Freestyle Session');
-            }}
+            onPress={() => router.navigate('/(tabs)/clients' as any)}
             style={styles.startBtn}
           >
-            <Zap color="#fff" size={18} />
-            <Text style={styles.startBtnText}>Start Freestyle</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/routines' as any)}
-            style={styles.routinesBtn}
-          >
-            <BookOpen color={Colors.dark.accent} size={18} />
-            <Text style={styles.routinesBtnText}>Browse Routines</Text>
+            <Users color="#fff" size={18} />
+            <Text style={styles.startBtnText}>Go to Clients</Text>
           </Pressable>
         </View>
       </View>
@@ -190,6 +184,7 @@ export default function WorkoutScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.topBar}>
         <View>
+          <Text style={styles.clientNameLabel}>{activeWorkout.clientName}</Text>
           <Text style={styles.workoutName}>{activeWorkout.name}</Text>
           <View style={styles.timerRow}>
             <Clock color={Colors.dark.accent} size={14} />
@@ -241,62 +236,63 @@ export default function WorkoutScreen() {
 
             <View style={styles.setHeader}>
               <Text style={[styles.setHeaderText, styles.setNumCol]}>SET</Text>
-              <Text style={[styles.setHeaderText, styles.setPrevCol]}>PREV</Text>
               <Text style={[styles.setHeaderText, styles.setWeightCol]}>KG</Text>
               <Text style={[styles.setHeaderText, styles.setRepsCol]}>REPS</Text>
-              <Text style={[styles.setHeaderText, styles.setCheckCol]}></Text>
+              <Text style={[styles.setHeaderText, styles.setNotesCol]}>NOTES</Text>
             </View>
 
             {exercise.sets.map((set, setIdx) => {
               const prevSet = exercise.previousSets?.[setIdx];
               return (
-                <View
+                <Swipeable
                   key={setIdx}
-                  style={[styles.setRow, set.completed && styles.setRowCompleted]}
+                  renderRightActions={() => (
+                    <Pressable
+                      style={styles.deleteSetBtn}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        removeSetFromExercise(exIdx, setIdx);
+                      }}
+                    >
+                      <Trash2 color="#fff" size={16} />
+                    </Pressable>
+                  )}
+                  overshootRight={false}
                 >
-                  <Text style={[styles.setNum, styles.setNumCol]}>{setIdx + 1}</Text>
-                  <Text style={[styles.prevText, styles.setPrevCol]}>
-                    {prevSet ? `${prevSet.weight}×${prevSet.reps}` : '—'}
-                  </Text>
-                  <View style={styles.setWeightCol}>
-                    <TextInput
-                      style={styles.setInput}
-                      value={set.weight > 0 ? set.weight.toString() : ''}
-                      placeholder={prevSet ? prevSet.weight.toString() : '0'}
-                      placeholderTextColor={Colors.dark.textTertiary}
-                      keyboardType="numeric"
-                      onChangeText={(v) => {
-                        const num = parseInt(v) || 0;
-                        updateSet(exIdx, setIdx, 'weight', num);
-                      }}
-                    />
+                  <View style={styles.setRow}>
+                    <Text style={[styles.setNum, styles.setNumCol]}>{setIdx + 1}</Text>
+                    <View style={styles.setWeightCol}>
+                      <TextInput
+                        style={styles.setInput}
+                        value={set.weight > 0 ? set.weight.toString() : ''}
+                        placeholder={prevSet ? prevSet.weight.toString() : '0'}
+                        placeholderTextColor={Colors.dark.textTertiary}
+                        keyboardType="numeric"
+                        onChangeText={(v) => updateSet(exIdx, setIdx, 'weight', parseInt(v) || 0)}
+                      />
+                    </View>
+                    <View style={styles.setRepsCol}>
+                      <TextInput
+                        style={styles.setInput}
+                        value={set.reps > 0 ? set.reps.toString() : ''}
+                        placeholder={prevSet ? prevSet.reps.toString() : '0'}
+                        placeholderTextColor={Colors.dark.textTertiary}
+                        keyboardType="numeric"
+                        onChangeText={(v) => updateSet(exIdx, setIdx, 'reps', parseInt(v) || 0)}
+                      />
+                    </View>
+                    <View style={styles.setNotesCol}>
+                      <TextInput
+                        style={[styles.setInput, styles.setNotesInput]}
+                        value={set.notes ?? ''}
+                        placeholder={prevSet?.notes || 'notes'}
+                        placeholderTextColor={Colors.dark.textTertiary}
+                        onChangeText={(v) => updateSetNotes(exIdx, setIdx, v)}
+                        returnKeyType="done"
+                      />
+                    </View>
                   </View>
-                  <View style={styles.setRepsCol}>
-                    <TextInput
-                      style={styles.setInput}
-                      value={set.reps > 0 ? set.reps.toString() : ''}
-                      placeholder={prevSet ? prevSet.reps.toString() : '0'}
-                      placeholderTextColor={Colors.dark.textTertiary}
-                      keyboardType="numeric"
-                      onChangeText={(v) => {
-                        const num = parseInt(v) || 0;
-                        updateSet(exIdx, setIdx, 'reps', num);
-                      }}
-                    />
-                  </View>
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      toggleSetComplete(exIdx, setIdx);
-                    }}
-                    style={[styles.checkBtn, set.completed && styles.checkBtnCompleted]}
-                  >
-                    <Check
-                      color={set.completed ? '#fff' : Colors.dark.textTertiary}
-                      size={16}
-                    />
-                  </Pressable>
-                </View>
+                </Swipeable>
               );
             })}
 
@@ -444,24 +440,6 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: '#fff',
   },
-  routinesBtn: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: Colors.dark.card,
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    gap: 8,
-    width: '100%' as const,
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-  },
-  routinesBtnText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: Colors.dark.accent,
-  },
   topBar: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
@@ -471,10 +449,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: Colors.dark.border,
   },
+  clientNameLabel: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: Colors.dark.accent,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+  },
   workoutName: {
     fontSize: 18,
     fontWeight: '800' as const,
     color: Colors.dark.text,
+    marginTop: 2,
   },
   timerRow: {
     flexDirection: 'row' as const,
@@ -578,65 +564,60 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   setNumCol: {
-    width: 36,
-    textAlign: 'center' as const,
-  },
-  setPrevCol: {
-    width: 64,
+    width: 30,
     textAlign: 'center' as const,
   },
   setWeightCol: {
     flex: 1,
     alignItems: 'center' as const,
+    marginHorizontal: 3,
   },
   setRepsCol: {
     flex: 1,
     alignItems: 'center' as const,
+    marginHorizontal: 3,
   },
-  setCheckCol: {
-    width: 36,
+  setNotesCol: {
+    flex: 2,
+    alignItems: 'stretch' as const,
+    marginLeft: 3,
   },
   setRow: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 5,
     marginBottom: 2,
-  },
-  setRowCompleted: {
-    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    backgroundColor: Colors.dark.card,
   },
   setNum: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
     color: Colors.dark.textSecondary,
-  },
-  prevText: {
-    fontSize: 13,
-    color: Colors.dark.textTertiary,
   },
   setInput: {
     backgroundColor: Colors.dark.inputBg,
     borderRadius: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 8,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600' as const,
     color: Colors.dark.text,
     textAlign: 'center' as const,
-    width: 60,
+    width: '100%' as const,
   },
-  checkBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.dark.inputBg,
-    alignItems: 'center' as const,
+  setNotesInput: {
+    textAlign: 'left' as const,
+    fontWeight: '400' as const,
+    fontSize: 13,
+  },
+  deleteSetBtn: {
+    backgroundColor: Colors.dark.danger,
     justifyContent: 'center' as const,
-    marginLeft: 4,
-  },
-  checkBtnCompleted: {
-    backgroundColor: Colors.dark.success,
+    alignItems: 'center' as const,
+    width: 56,
+    borderRadius: 8,
+    marginBottom: 2,
+    marginVertical: 5,
   },
   addSetBtn: {
     flexDirection: 'row' as const,

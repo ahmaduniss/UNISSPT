@@ -21,7 +21,7 @@ import { useApp } from '@/contexts/AppContext';
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { login, signup, isAuthenticated, isOnboarded } = useApp();
+  const { login, signup, isAuthenticated, userRole, hasProfile, isProfileLoading } = useApp();
 
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
@@ -40,12 +40,15 @@ export default function LoginScreen() {
   const confirmRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    if (isAuthenticated && isOnboarded) {
-      router.replace('/(tabs)/home' as any);
-    } else if (isAuthenticated && !isOnboarded) {
-      router.replace('/gym-select' as any);
+    if (!isAuthenticated || isProfileLoading) return;
+    if (!hasProfile) {
+      router.replace('/onboarding' as any);
+    } else if (userRole === 'client') {
+      router.replace('/(client)/home' as any);
+    } else {
+      router.replace('/(tabs)/clients' as any);
     }
-  }, [isAuthenticated, isOnboarded]);
+  }, [isAuthenticated, isProfileLoading, hasProfile, userRole]);
 
   useEffect(() => {
     Animated.stagger(200, [
@@ -204,8 +207,8 @@ export default function LoginScreen() {
             </Text>
             <Text style={styles.subtitle}>
               {isSignUp
-                ? 'Sign up to start tracking your gains'
-                : 'Log in to continue your training'}
+                ? 'Sign up as a trainer or a client to get started'
+                : 'Log in to continue'}
             </Text>
           </Animated.View>
 

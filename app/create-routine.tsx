@@ -18,13 +18,22 @@ import {
   View,
 } from 'react-native';
 import Colors from '@/constants/colors';
-import { DEFAULT_EXERCISES, MUSCLE_GROUPS } from '@/constants/exercises';
+import { MUSCLE_GROUPS } from '@/constants/exercises';
 import { useApp } from '@/contexts/AppContext';
+import { trpc } from '@/lib/trpc';
 import { RoutineExercise } from '@/types/workout';
 
 export default function CreateRoutineScreen() {
   const router = useRouter();
-  const { saveRoutine, allExercises } = useApp();
+  const { allExercises } = useApp();
+  const utils = trpc.useUtils();
+  const createRoutineMutation = trpc.routines.create.useMutation({
+    onSuccess: () => {
+      utils.routines.list.invalidate();
+      router.back();
+    },
+    onError: (error) => Alert.alert('Could not save routine', error.message),
+  });
 
   const [name, setName] = useState<string>('');
   const [exercises, setExercises] = useState<RoutineExercise[]>([]);
@@ -85,13 +94,8 @@ export default function CreateRoutineScreen() {
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    saveRoutine({
-      id: `routine_${Date.now()}`,
-      name: name.trim(),
-      exercises,
-    });
-    router.back();
-  }, [name, exercises, saveRoutine, router]);
+    createRoutineMutation.mutate({ name: name.trim(), exercises });
+  }, [name, exercises, createRoutineMutation]);
 
   if (showPicker) {
     return (

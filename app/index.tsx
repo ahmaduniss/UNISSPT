@@ -22,17 +22,18 @@ export default function WelcomeScreen() {
   const buttonAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const { isOnboarded, isLoading, isAuthenticated } = useApp();
+  const { isLoading, isAuthenticated, userRole, hasProfile, isProfileLoading } = useApp();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated && isOnboarded) {
-      router.replace('/(tabs)/home' as any);
-    } else if (!isLoading && isAuthenticated && !isOnboarded) {
-      router.replace('/gym-select' as any);
-    } else if (!isLoading && !isAuthenticated) {
-      // Stay on welcome, user will tap to go to login
+    if (isLoading || !isAuthenticated || isProfileLoading) return;
+    if (!hasProfile) {
+      router.replace('/onboarding' as any);
+    } else if (userRole === 'client') {
+      router.replace('/(client)/home' as any);
+    } else {
+      router.replace('/(tabs)/clients' as any);
     }
-  }, [isLoading, isOnboarded, isAuthenticated]);
+  }, [isLoading, isAuthenticated, isProfileLoading, hasProfile, userRole]);
 
   useEffect(() => {
     Animated.sequence([
@@ -71,7 +72,7 @@ export default function WelcomeScreen() {
     ).start();
   }, []);
 
-  if (isLoading || (isAuthenticated && isOnboarded)) {
+  if (isLoading || isAuthenticated) {
     return <View style={styles.container} />;
   }
 
@@ -127,16 +128,16 @@ export default function WelcomeScreen() {
         </View>
 
         <Text style={styles.title}>UNISS</Text>
-        <Text style={styles.subtitle}>MULTI-GYM WORKOUT PLATFORM</Text>
+        <Text style={styles.subtitle}>TRAINING, CONNECTED</Text>
 
         <View style={styles.divider} />
 
         <Text style={styles.description}>
-          Track your lifts. Compete with your gym.{'\n'}Get stronger every session.
+          For trainers: manage every client in one place.{'\n'}For athletes: find a coach and track your progress.
         </Text>
 
         <View style={styles.features}>
-          {['Real-time workout tracking', 'Gym leaderboards & competition', 'AI-powered progress insights'].map(
+          {['Per-client workout logging', 'Browse & book online coaches', 'Progress photos & performance testing'].map(
             (feature, index) => (
               <View key={index} style={styles.featureRow}>
                 <View style={styles.featureDot} />

@@ -45,3 +45,7 @@ rork-eslint.config.js
 core
 node_modules
 .expo
+
+# Claude Code local settings
+.claude/
+package-lock.json

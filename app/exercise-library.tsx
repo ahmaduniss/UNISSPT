@@ -1,15 +1,17 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Search, Plus, Check } from 'lucide-react-native';
+import { Search, Plus, X } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
-  Alert,
 } from 'react-native';
 import Colors from '@/constants/colors';
 import { MUSCLE_GROUPS } from '@/constants/exercises';
@@ -22,6 +24,8 @@ export default function ExerciseLibraryScreen() {
 
   const [search, setSearch] = useState<string>('');
   const [selectedGroup, setSelectedGroup] = useState<string>('All');
+  const [addModalVisible, setAddModalVisible] = useState<boolean>(false);
+  const [newExerciseName, setNewExerciseName] = useState<string>('');
 
   const filtered = useMemo(() => {
     let list = allExercises;
@@ -53,32 +57,25 @@ export default function ExerciseLibraryScreen() {
   };
 
   const handleAddCustom = () => {
-    Alert.prompt(
-      'Add Custom Exercise',
-      'Enter the exercise name:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: (name?: string) => {
-            if (name && name.trim()) {
-              const exercise = {
-                id: `custom_${Date.now()}`,
-                name: name.trim(),
-                muscleGroup: selectedGroup === 'All' ? 'Other' : selectedGroup,
-                isCustom: true,
-              };
-              addCustomExercise(exercise);
-              if (mode === 'select') {
-                addExerciseToWorkout(exercise);
-                router.back();
-              }
-            }
-          },
-        },
-      ],
-      'plain-text',
-    );
+    setNewExerciseName('');
+    setAddModalVisible(true);
+  };
+
+  const handleSubmitCustom = () => {
+    const name = newExerciseName.trim();
+    if (!name) return;
+    const exercise = {
+      id: `custom_${Date.now()}`,
+      name,
+      muscleGroup: selectedGroup === 'All' ? 'Other' : selectedGroup,
+      isCustom: true,
+    };
+    addCustomExercise(exercise);
+    setAddModalVisible(false);
+    if (mode === 'select') {
+      addExerciseToWorkout(exercise);
+      router.back();
+    }
   };
 
   return (
@@ -153,6 +150,43 @@ export default function ExerciseLibraryScreen() {
         </Pressable>
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      <Modal
+        visible={addModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAddModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Custom Exercise</Text>
+              <Pressable onPress={() => setAddModalVisible(false)} hitSlop={8}>
+                <X color={Colors.dark.textTertiary} size={20} />
+              </Pressable>
+            </View>
+            <TextInput
+              style={styles.modalInput}
+              value={newExerciseName}
+              onChangeText={setNewExerciseName}
+              placeholder="Exercise name"
+              placeholderTextColor={Colors.dark.textTertiary}
+              autoFocus
+              onSubmitEditing={handleSubmitCustom}
+              returnKeyType="done"
+            />
+            <Pressable
+              onPress={handleSubmitCustom}
+              style={({ pressed }) => [styles.modalSaveBtn, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.modalSaveBtnText}>Add Exercise</Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -285,5 +319,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: Colors.dark.accent,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: Colors.dark.overlay,
+    justifyContent: 'flex-end' as const,
+  },
+  modalSheet: {
+    backgroundColor: Colors.dark.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: Colors.dark.text,
+  },
+  modalInput: {
+    backgroundColor: Colors.dark.inputBg,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: Colors.dark.text,
+    fontWeight: '500' as const,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  modalSaveBtn: {
+    backgroundColor: Colors.dark.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center' as const,
+    marginTop: 20,
+  },
+  modalSaveBtnText: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: '#fff',
   },
 });
